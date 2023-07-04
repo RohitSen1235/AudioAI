@@ -35,9 +35,9 @@ def compare_audio(query_audio, reference_library):
     query_features = extract_features(query_audio)
     similarities = {}
     for filename, reference_features in reference_library.items():
-        minkowski_distance = distance.minkowski(np.array(query_features.T), np.array(reference_features.T))
-        # similarity = cosine_similarity(query_features.T, reference_features.T).mean()
-        similarity = 1 / (1+minkowski_distance)
+        # minkowski_distance = distance.minkowski(np.array(query_features.T), np.array(reference_features.T))
+        # similarity = 1 / (1+minkowski_distance)
+        similarity = cosine_similarity(query_features.T, reference_features.T).mean()
         similarities[filename] = similarity
     return similarities,query_features
 
@@ -50,7 +50,7 @@ def is_song_present(query_audio, reference_library, threshold=0.8):
 
     distance={}
     # Print the most similar audio files
-    for filename, similarity in sorted_similarities[0:5]:
+    for filename, similarity in sorted_similarities:
         distance[filename] =  np.linalg.norm(reference_library[filename] - query_features)
         print(f"{filename}: Similarity : {similarity}, distance : {distance[filename]}")
 
@@ -77,26 +77,25 @@ def main():
     with col1:
         # File upload section
         library = st.file_uploader("Upload Library", type=['WAV', 'MP3'], key="Upload Song Library" ,accept_multiple_files=True)
-        library_embeddings = {}
-        # Process the uploaded files
-        if library:
-            with st.spinner('Generating Vector Embeddings for Songs in Library'):
-                # st.write("Generating Vector Embeddings for Songs in Library")
-                library_embeddings = build_reference_library(library)
-            # st.success('Done!')
 
+    
     with col2:
 
         file = st.file_uploader("Upload Query Song", type= ['WAV', 'MP3'], key="Upload Song")
 
-        if file:
+    if file and library:
+        if st.button("Check for song in library"):
+            library_embeddings = {}
+            with st.spinner('Generating Vector Embeddings for Songs in Library'):
+                # st.write("Generating Vector Embeddings for Songs in Library")
+                library_embeddings = build_reference_library(library)
+            
             with st.spinner('Comparing Query Song with Library'):
                 song_exists = is_song_present(file, library_embeddings)
-
                 if song_exists:
-                    st.success("The song is already present in the reference library.")
+                    st.warning(f'song {file.name} PRESENT in library', icon="⚠️")
                 else:
-                    st.success("The song is not present in the reference library.")
+                    st.success(f"The song {file.name} is not present in the given library.", icon="✅")
 
 if __name__ == "__main__":
     main()
